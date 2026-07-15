@@ -1,17 +1,17 @@
 import { useState, useEffect, type SyntheticEvent } from "react";
 import { useParams } from "react-router-dom";
+import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { api } from "../lib/api";
 import type { Project } from "../types";
 import Box from "@mui/material/Box";
-import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
-import CircularProgress from "@mui/material/CircularProgress";
-import Alert from "@mui/material/Alert";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import Alert from "@mui/material/Alert";
+import DroppableColumn from "../components/DroppableColumn";
+import DraggableTask from "../components/DraggableTask";
 
 const STATUSES = ["todo", "in-progress", "done"];
 
@@ -53,6 +53,28 @@ export default function BoardPage() {
     }
   }
 
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || !project) return;
+
+    const taskId = String(active.id);
+    const newStatus = String(over.id);
+
+    const task = project.tasks?.find((t) => t.id === taskId);
+    if (!task || task.status === newStatus) return;
+
+    const updatedTasks = project.tasks?.map((t) =>
+      t.id === taskId ? { ...t, status: newStatus } : t
+    );
+    setProject({ ...project, tasks: updatedTasks });
+
+    try {
+      await api.put(`/tasks/${taskId}`, { status: newStatus });
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
   if (loading) return <CircularProgress />;
   if (error) return <Alert severity="error">{error}</Alert>;
   if (!project) return <Alert severity="warning">Project not found</Alert>;
@@ -62,7 +84,8 @@ export default function BoardPage() {
       <Typography variant="h4" gutterBottom>
         {project.name}
       </Typography>
-        <Stack
+
+      <Stack
         component="form"
         direction="row"
         spacing={1}
@@ -80,29 +103,19 @@ export default function BoardPage() {
         </Button>
       </Stack>
 
-      <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-        {STATUSES.map((status) => (
-          <Paper key={status} sx={{ flex: 1, p: 2 }}>
-            <Typography
-              variant="h6"
-              sx={{ textTransform: "capitalize", mb: 1 }}
-            >
-              {status}
-            </Typography>
-            <Stack spacing={1}>
+      <DndContext onDragEnd={handleDragEnd}>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+          {STATUSES.map((status) => (
+            <DroppableColumn key={status} status={status}>
               {project.tasks
                 ?.filter((task) => task.status === status)
                 .map((task) => (
-                  <Card key={task.id} variant="outlined">
-                    <CardContent>
-                      <Typography>{task.title}</Typography>
-                    </CardContent>
-                  </Card>
+                  <DraggableTask key={task.id} task={task} />
                 ))}
-            </Stack>
-          </Paper>
-        ))}
-      </Box>
+            </DroppableColumn>
+          ))}
+        </Box>
+      </DndContext>
     </Box>
   );
 }
