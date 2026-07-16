@@ -1,4 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
+import { useTheme } from "@mui/material/styles";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
@@ -23,10 +24,16 @@ const PRIORITY_BORDER: Record<string, string> = {
   high: "#ef4444",
 };
 
-const STATUS_BG: Record<string, string> = {
+const STATUS_BG_LIGHT: Record<string, string> = {
   todo: "#ffffff",
   "in-progress": "#fff8e1",
   done: "#eafaf0",
+};
+
+const STATUS_BG_DARK: Record<string, string> = {
+  todo: "#1e293b",
+  "in-progress": "#3a2f14",
+  done: "#14311f",
 };
 
 function getDueMeta(dueDate: string, status: string) {
@@ -55,6 +62,10 @@ export default function DraggableTask({
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: task.id });
 
+  const theme = useTheme();
+  const statusBg =
+    theme.palette.mode === "dark" ? STATUS_BG_DARK : STATUS_BG_LIGHT;
+
   const due = task.dueDate ? getDueMeta(task.dueDate, task.status) : null;
 
   return (
@@ -65,7 +76,7 @@ export default function DraggableTask({
       {...attributes}
       sx={{
         cursor: "grab",
-        bgcolor: STATUS_BG[task.status] ?? "#ffffff",
+        bgcolor: statusBg[task.status] ?? theme.palette.background.paper,
         borderLeft: "4px solid",
         borderLeftColor: PRIORITY_BORDER[task.priority] ?? "#cbd5e1",
         opacity: isDragging ? 0.4 : 1,

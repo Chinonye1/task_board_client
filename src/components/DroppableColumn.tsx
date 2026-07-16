@@ -31,7 +31,12 @@ export default function DroppableColumn({
       sx={{
         flex: 1,
         p: 1.5,
-        bgcolor: isOver ? "action.hover" : "#eef1f5",
+        bgcolor: (theme) =>
+          isOver
+            ? theme.palette.action.hover
+            : theme.palette.mode === "dark"
+              ? "rgba(255,255,255,0.04)"
+              : "#eef1f5",
         border: "1px solid",
         borderColor: isOver ? "primary.main" : "divider",
         transition: "background-color 0.2s, border-color 0.2s",
