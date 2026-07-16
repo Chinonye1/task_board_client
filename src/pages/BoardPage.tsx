@@ -1,13 +1,11 @@
-import { useState, useEffect, type SyntheticEvent } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { api } from "../lib/api";
-import type { Project } from "../types";
+import type { Project, Task } from "../types";
 import Box from "@mui/material/Box";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
-import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import Dialog from "@mui/material/Dialog";
@@ -17,6 +15,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
 import DroppableColumn from "../components/DroppableColumn";
 import DraggableTask from "../components/DraggableTask";
+import TaskDialog, { type TaskFormValues } from "../components/TaskDialog";
 
 const STATUSES = ["todo", "in-progress", "done"];
 
@@ -25,8 +24,9 @@ export default function BoardPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
   const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   useEffect(() => {
     async function loadProject() {
@@ -43,17 +43,41 @@ export default function BoardPage() {
     loadProject();
   }, [id]);
 
-  async function handleAddTask(e: SyntheticEvent) {
-    e.preventDefault();
-    if (!title.trim() || !project) return;
+  function openCreate() {
+    setEditingTask(null);
+    setDialogOpen(true);
+  }
+
+  function openEdit(task: Task) {
+    setEditingTask(task);
+    setDialogOpen(true);
+  }
+
+  async function handleSaveTask(values: TaskFormValues) {
+    if (!project) return;
+
+    const payload = {
+      title: values.title,
+      description: values.description || null,
+      priority: values.priority,
+      dueDate: values.dueDate || null,
+    };
 
     try {
-      const newTask = await api.post("/tasks", {
-        title,
-        projectId: project.id,
-      });
-      setProject({ ...project, tasks: [...(project.tasks ?? []), newTask] });
-      setTitle("");
+      if (editingTask) {
+        const updated = await api.put(`/tasks/${editingTask.id}`, payload);
+        setProject({
+          ...project,
+          tasks: project.tasks?.map((t) => (t.id === updated.id ? updated : t)),
+        });
+      } else {
+        const created = await api.post("/tasks", {
+          ...payload,
+          projectId: project.id,
+        });
+        setProject({ ...project, tasks: [...(project.tasks ?? []), created] });
+      }
+      setDialogOpen(false);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -96,34 +120,25 @@ export default function BoardPage() {
     }
   }
 
-
   if (loading) return <CircularProgress />;
   if (error) return <Alert severity="error">{error}</Alert>;
   if (!project) return <Alert severity="warning">Project not found</Alert>;
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        {project.name}
-      </Typography>
-
-      <Stack
-        component="form"
-        direction="row"
-        spacing={1}
-        onSubmit={handleAddTask}
-        sx={{ mb: 3 }}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 3,
+        }}
       >
-        <TextField
-          label="New task title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          size="small"
-        />
-        <Button type="submit" variant="contained">
-          Add Task
+        <Typography variant="h4">{project.name}</Typography>
+        <Button variant="contained" onClick={openCreate}>
+          New Task
         </Button>
-      </Stack>
+      </Box>
 
       <DndContext onDragEnd={handleDragEnd}>
         <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
@@ -136,12 +151,20 @@ export default function BoardPage() {
                     key={task.id}
                     task={task}
                     onDelete={setDeleteTaskId}
+                    onEdit={openEdit}
                   />
                 ))}
             </DroppableColumn>
           ))}
         </Box>
       </DndContext>
+
+      <TaskDialog
+        open={dialogOpen}
+        task={editingTask}
+        onClose={() => setDialogOpen(false)}
+        onSave={handleSaveTask}
+      />
 
       <Dialog open={deleteTaskId !== null} onClose={() => setDeleteTaskId(null)}>
         <DialogTitle>Delete task?</DialogTitle>

@@ -11,6 +11,7 @@ export interface Task {
   title: string;
   description: string | null;
   status: string;
+  priority: string;
   dueDate: string | null;
   projectId: string;
   createdAt: string;
