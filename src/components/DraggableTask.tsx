@@ -16,6 +16,18 @@ const PRIORITY_COLORS = {
   high: "error",
 } as const;
 
+const PRIORITY_BORDER: Record<string, string> = {
+  low: "#10b981",
+  medium: "#f59e0b",
+  high: "#ef4444",
+};
+
+const STATUS_BG: Record<string, string> = {
+  todo: "#ffffff",
+  "in-progress": "#fff8e1",
+  done: "#eafaf0",
+};
+
 export default function DraggableTask({
   task,
   onDelete,
@@ -36,22 +48,31 @@ export default function DraggableTask({
       {...attributes}
       sx={{
         cursor: "grab",
+        bgcolor: STATUS_BG[task.status] ?? "#ffffff",
+        borderLeft: "4px solid",
+        borderLeftColor: PRIORITY_BORDER[task.priority] ?? "#cbd5e1",
         opacity: isDragging ? 0.4 : 1,
+        boxShadow: isDragging ? 6 : 0,
+        transition: "box-shadow 0.2s",
+        "&:hover": { boxShadow: 3 },
         transform: transform
           ? `translate(${transform.x}px, ${transform.y}px)`
           : undefined,
       }}
     >
-      <CardContent sx={{ "&:last-child": { pb: 2 } }}>
+      <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
         <Box
           sx={{
             display: "flex",
             alignItems: "flex-start",
             justifyContent: "space-between",
+            gap: 0.5,
           }}
         >
-          <Typography sx={{ flexGrow: 1 }}>{task.title}</Typography>
-          <Box sx={{ flexShrink: 0 }}>
+          <Typography sx={{ flexGrow: 1, fontWeight: 500 }}>
+            {task.title}
+          </Typography>
+          <Box sx={{ flexShrink: 0, mt: -0.5, mr: -0.5 }}>
             <IconButton
               size="small"
               onClick={() => onEdit(task)}

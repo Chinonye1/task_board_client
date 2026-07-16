@@ -32,7 +32,7 @@ export default function BoardPage() {
     async function loadProject() {
       try {
         const data = await api.get(`/projects/${id}`);
-        setProject(data);
+        setProject(data)
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -142,11 +142,16 @@ export default function BoardPage() {
 
       <DndContext onDragEnd={handleDragEnd}>
         <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-          {STATUSES.map((status) => (
-            <DroppableColumn key={status} status={status}>
-              {project.tasks
-                ?.filter((task) => task.status === status)
-                .map((task) => (
+          {STATUSES.map((status) => {
+            const columnTasks =
+              project.tasks?.filter((task) => task.status === status) ?? [];
+            return (
+              <DroppableColumn
+                key={status}
+                status={status}
+                count={columnTasks.length}
+              >
+                {columnTasks.map((task) => (
                   <DraggableTask
                     key={task.id}
                     task={task}
@@ -154,8 +159,9 @@ export default function BoardPage() {
                     onEdit={openEdit}
                   />
                 ))}
-            </DroppableColumn>
-          ))}
+              </DroppableColumn>
+            );
+          })}
         </Box>
       </DndContext>
 

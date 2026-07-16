@@ -8,7 +8,18 @@ import App from './App.tsx'
 import ProjectsPage from './pages/ProjectsPage.tsx'
 import BoardPage from './pages/BoardPage.tsx'
 
-const theme = createTheme()
+const theme = createTheme({
+  palette: {
+    primary: { main: "#4f46e5" },
+    background: { default: "#f4f5f7", paper: "#ffffff" },
+  },
+  shape: { borderRadius: 12 },
+  typography: {
+    fontFamily: 'system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    h4: { fontWeight: 700 },
+    h6: { fontWeight: 600 },
+  },
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
