@@ -134,7 +134,7 @@ export default function DraggableTask({
           </Typography>
         )}
 
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Chip
             label={task.priority}
             size="small"
