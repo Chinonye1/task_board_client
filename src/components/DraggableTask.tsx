@@ -8,6 +8,7 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import type { Task } from "../types";
 
 const PRIORITY_COLORS = {
@@ -28,6 +29,20 @@ const STATUS_BG: Record<string, string> = {
   done: "#eafaf0",
 };
 
+function getDueMeta(dueDate: string, status: string) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate);
+  due.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+  const formatted = due.toLocaleDateString();
+
+  if (status === "done") return { color: "text.secondary", label: formatted };
+  if (diffDays < 0) return { color: "error.main", label: `Overdue · ${formatted}` };
+  if (diffDays <= 2) return { color: "warning.main", label: `Due soon · ${formatted}` };
+  return { color: "text.secondary", label: `Due ${formatted}` };
+}
+
 export default function DraggableTask({
   task,
   onDelete,
@@ -39,6 +54,8 @@ export default function DraggableTask({
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: task.id });
+
+  const due = task.dueDate ? getDueMeta(task.dueDate, task.status) : null;
 
   return (
     <Card
@@ -55,6 +72,7 @@ export default function DraggableTask({
         boxShadow: isDragging ? 6 : 0,
         transition: "box-shadow 0.2s",
         "&:hover": { boxShadow: 3 },
+        "&:hover .task-actions, &:focus-within .task-actions": { opacity: 1 },
         transform: transform
           ? `translate(${transform.x}px, ${transform.y}px)`
           : undefined,
@@ -72,7 +90,16 @@ export default function DraggableTask({
           <Typography sx={{ flexGrow: 1, fontWeight: 500 }}>
             {task.title}
           </Typography>
-          <Box sx={{ flexShrink: 0, mt: -0.5, mr: -0.5 }}>
+          <Box
+            className="task-actions"
+            sx={{
+              flexShrink: 0,
+              mt: -0.5,
+              mr: -0.5,
+              opacity: { xs: 1, md: 0 },
+              transition: "opacity 0.15s",
+            }}
+          >
             <IconButton
               size="small"
               onClick={() => onEdit(task)}
@@ -106,10 +133,23 @@ export default function DraggableTask({
             }
             sx={{ textTransform: "capitalize" }}
           />
-          {task.dueDate && (
-            <Typography variant="caption" color="text.secondary">
-              Due {new Date(task.dueDate).toLocaleDateString()}
-            </Typography>
+          {due && (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                color: due.color,
+              }}
+            >
+              <CalendarMonthIcon sx={{ fontSize: 16 }} />
+              <Typography
+                variant="caption"
+                sx={{ color: "inherit", fontWeight: 500 }}
+              >
+                {due.label}
+              </Typography>
+            </Box>
           )}
         </Stack>
       </CardContent>
