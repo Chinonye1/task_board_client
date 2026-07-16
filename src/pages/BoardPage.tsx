@@ -8,6 +8,7 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
+import Snackbar from "@mui/material/Snackbar";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -27,6 +28,15 @@ export default function BoardPage() {
   const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [toast, setToast] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({ open: false, message: "", severity: "success" });
+
+  function notify(message: string, severity: "success" | "error" = "success") {
+    setToast({ open: true, message, severity });
+  }
 
   useEffect(() => {
     async function loadProject() {
@@ -78,8 +88,9 @@ export default function BoardPage() {
         setProject({ ...project, tasks: [...(project.tasks ?? []), created] });
       }
       setDialogOpen(false);
+      notify(editingTask ? "Task updated" : "Task created");
     } catch (err) {
-      setError((err as Error).message);
+      notify((err as Error).message, "error");
     }
   }
 
@@ -101,7 +112,7 @@ export default function BoardPage() {
     try {
       await api.put(`/tasks/${taskId}`, { status: newStatus });
     } catch (err) {
-      setError((err as Error).message);
+      notify((err as Error).message, "error");
     }
   }
 
@@ -113,8 +124,9 @@ export default function BoardPage() {
 
     try {
       await api.delete(`/tasks/${deleteTaskId}`);
+      notify("Task deleted");
     } catch (err) {
-      setError((err as Error).message);
+      notify((err as Error).message, "error");
     } finally {
       setDeleteTaskId(null);
     }
@@ -186,6 +198,21 @@ export default function BoardPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={3000}
+        onClose={() => setToast({ ...toast, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity={toast.severity}
+          variant="filled"
+          onClose={() => setToast({ ...toast, open: false })}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -14,6 +14,7 @@ import CardContent from "@mui/material/CardContent";
 import IconButton from "@mui/material/IconButton";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
+import Snackbar from "@mui/material/Snackbar";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -28,6 +29,15 @@ export default function ProjectsPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({ open: false, message: "", severity: "success" });
+
+  function notify(message: string, severity: "success" | "error" = "success") {
+    setToast({ open: true, message, severity });
+  }
 
   useEffect(() => {
     async function loadProjects() {
@@ -56,8 +66,9 @@ export default function ProjectsPage() {
       setProjects([newProject, ...projects]);
       setName("");
       setDescription("");
+      notify("Project created");
     } catch (err) {
-      setError((err as Error).message);
+      notify((err as Error).message, "error");
     }
   }
 
@@ -68,8 +79,9 @@ export default function ProjectsPage() {
 
     try {
       await api.delete(`/projects/${deleteProjectId}`);
+      notify("Project deleted");
     } catch (err) {
-      setError((err as Error).message);
+      notify((err as Error).message, "error");
     } finally {
       setDeleteProjectId(null);
     }
@@ -181,6 +193,21 @@ export default function ProjectsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={3000}
+        onClose={() => setToast({ ...toast, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity={toast.severity}
+          variant="filled"
+          onClose={() => setToast({ ...toast, open: false })}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
