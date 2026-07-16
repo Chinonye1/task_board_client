@@ -10,6 +10,11 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogActions from "@mui/material/DialogActions";
 import DroppableColumn from "../components/DroppableColumn";
 import DraggableTask from "../components/DraggableTask";
 
@@ -21,6 +26,7 @@ export default function BoardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
+  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProject() {
@@ -75,6 +81,22 @@ export default function BoardPage() {
     }
   }
 
+  async function confirmDelete() {
+    if (!project || !deleteTaskId) return;
+
+    const updatedTasks = project.tasks?.filter((t) => t.id !== deleteTaskId);
+    setProject({ ...project, tasks: updatedTasks });
+
+    try {
+      await api.delete(`/tasks/${deleteTaskId}`);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setDeleteTaskId(null);
+    }
+  }
+
+
   if (loading) return <CircularProgress />;
   if (error) return <Alert severity="error">{error}</Alert>;
   if (!project) return <Alert severity="warning">Project not found</Alert>;
@@ -110,12 +132,31 @@ export default function BoardPage() {
               {project.tasks
                 ?.filter((task) => task.status === status)
                 .map((task) => (
-                  <DraggableTask key={task.id} task={task} />
+                  <DraggableTask
+                    key={task.id}
+                    task={task}
+                    onDelete={setDeleteTaskId}
+                  />
                 ))}
             </DroppableColumn>
           ))}
         </Box>
       </DndContext>
+
+      <Dialog open={deleteTaskId !== null} onClose={() => setDeleteTaskId(null)}>
+        <DialogTitle>Delete task?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This can't be undone. The task will be permanently removed.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteTaskId(null)}>Cancel</Button>
+          <Button color="error" onClick={confirmDelete}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
